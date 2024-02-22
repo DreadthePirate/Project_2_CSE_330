@@ -1,5 +1,5 @@
 memalloc-main.o: \
- /home/hjohns/Desktop/cse330-public-PMA/memalloc/memalloc-main.c \
+ /home/hjohns/Project_2_CSE_330/cse330-public-PMA/memalloc/memalloc-main.c \
  include/linux/compiler-version.h include/linux/kconfig.h \
  include/generated/autoconf.h include/linux/compiler_types.h \
  include/linux/compiler_attributes.h include/linux/compiler-gcc.h \
@@ -309,4 +309,4 @@ memalloc-main.o: \
  include/uapi/linux/pci.h include/uapi/linux/pci_regs.h \
  include/linux/pci_ids.h include/linux/dmapool.h \
  arch/x86/include/asm/pci.h arch/x86/include/asm/memtype.h \
- /home/hjohns/Desktop/cse330-public-PMA/memalloc/../common.h
+ /home/hjohns/Project_2_CSE_330/cse330-public-PMA/memalloc/../common.h

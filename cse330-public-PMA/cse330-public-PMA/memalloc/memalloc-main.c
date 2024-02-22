@@ -47,6 +47,7 @@ void memalloc_ioctl_teardown(void);
 #define MAX_ALLOCATIONS     100
 
 /* Page table allocation helper functions defined in kmod_helper.c */
+
 pud_t*  memalloc_pud_alloc(p4d_t* p4d, unsigned long vaddr);
 pmd_t*  memalloc_pmd_alloc(pud_t* pud, unsigned long vaddr);
 void    memalloc_pte_alloc(pmd_t* pmd, unsigned long vaddr);
@@ -69,7 +70,7 @@ struct ioctl_data {
 	int number;
 };
 
-#define EXAMPLE_IOCTL		_IOW('a', 'a', struct ioclt_data *)
+#define EXAMPLE_IOCTL		_IOW('a', 'a', struct ioctl_data *)
 
 /* IOCTL handler for vmod. */
 static long memalloc_ioctl(struct file *f, unsigned int cmd, unsigned long arg) {
@@ -110,9 +111,44 @@ static struct file_operations fops =
 
 /* Init and Exit functions */
 static int __init memalloc_module_init(void) {
-    for(int ii = 0; ii < MAX_PAGES; ii++){
-        unsigned long vaddr = 0xdead;
 
+    printk("Hello from the memalloc module!\n");
+    if (alloc_chrdev_region(&dev, 0, 1, "memalloc") < 0) {
+        printk("error: couldn't allocate chardev region.\n");
+        return -1;
+    }
+    printk("[*] Allocated chardev.\n");
+
+    /* Initialize the chardev with my fops. */
+    cdev_init(&virtdev_cdev, &fops);
+
+    if (cdev_add(&virtdev_cdev, dev, 1) < 0) {
+        printk("[x] Couldn't add memalloc cdev.\n");
+        goto cdevfailed;
+    }
+    printk("[*] Allocated cdev.\n");
+
+    if ((virtdev_class = class_create("memalloc_class")) == NULL) {
+        printk("[X] couldn't create class.\n");
+        goto cdevfailed;
+    }
+    printk("[*] Allocated class.\n");
+
+    if ((device_create(virtdev_class, NULL, dev, NULL, "memalloc")) == NULL) {
+        printk("[X] couldn't create device.\n");
+        goto classfailed;
+    }
+
+
+classfailed:
+    class_destroy(virtdev_class);
+cdevfailed:
+    unregister_chrdev_region(dev, 1);
+
+    
+    for(int ii = 0; ii < MAX_PAGES; ii++){
+        unsigned long vaddr = alloc_req.vaddr;
+        
         pgd_t *pgd;
         p4d_t *p4d;
         pud_t *pud;
@@ -179,45 +215,11 @@ static int __init memalloc_module_init(void) {
         }
 
         // Get the physical address of the page
-        paddr = __pa(virt_addr);
-        ii++;
+        unsigned long paddr = __pa(virt_addr);
     }
 
-
-    printk("Hello from the memalloc module!\n");
-    if (alloc_chrdev_region(&dev, 0, 1, "memalloc") < 0) {
-        printk("error: couldn't allocate chardev region.\n");
-        return -1;
-    }
-    printk("[*] Allocated chardev.\n");
-
-    /* Initialize the chardev with my fops. */
-    cdev_init(&virtdev_cdev, &fops);
-
-    if (cdev_add(&virtdev_cdev, dev, 1) < 0) {
-        printk("[x] Couldn't add memalloc cdev.\n");
-        goto cdevfailed;
-    }
-    printk("[*] Allocated cdev.\n");
-
-    if ((virtdev_class = class_create("memalloc_class")) == NULL) {
-        printk("[X] couldn't create class.\n");
-        goto cdevfailed;
-    }
-    printk("[*] Allocated class.\n");
-
-    if ((device_create(virtdev_class, NULL, dev, NULL, "memalloc")) == NULL) {
-        printk("[X] couldn't create device.\n");
-        goto classfailed;
-    }
-    return 0;
-
-classfailed:
-    class_destroy(virtdev_class);
-cdevfailed:
-    unregister_chrdev_region(dev, 1);
-
-    return -1;
+    out:
+        return 0;
 }
 
 
