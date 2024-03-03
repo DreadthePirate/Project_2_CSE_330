@@ -18,13 +18,13 @@
  * the page can be allocated, accessed, and freed correctly.
  */
 
-bool test_allocate(void){
+bool test_allocate_free(void){
     struct alloc_info* allocCall;    
     allocCall = malloc(sizeof(struct alloc_info));
     allocCall->vaddr                = 0x10000000;
     allocCall->num_pages            = 1;
     allocCall->write                = true;
-    if (ioctl(devfd, ALLOCATE, allocCall) < 0) {
+    if (!ioctl(devfd, ALLOCATE, allocCall) < 0) {
         return false;
     }
 
@@ -46,29 +46,35 @@ bool test_free(void){
     freeCall = malloc(sizeof(struct free_info));
     freeCall->vaddr = 0x10000000;   
     if (ioctl(devfd, FREE, freeCall) < 0) {
-        perror("Failed to free pages");
+        perror("Failed to execute free ioctl correctly.\n");
         return false;
     }
-    return true;
+
+    /* Testing read permissions on (freed) page. This should segfault */
+    int* vaddr_ptr = (int*) freeCall->vaddr;
+    assert(*vaddr_ptr == 1);
+    return false;
 }
 
 int main(void)
 {
-    printf("Executing: TEST2\n");
+    printf("Executing: BTEST1\n");
 
     if (!open_device_driver()) return -1;
-    
-    if(!test_allocate()) {
+
+    register_segfault_handler();
+
+    if(!test_allocate_free()) {
     	printf("Allocate Failed!\n");
         return -1;
     }
     
     if(!test_free()){
-    	printf("Free Failed!\n");
+        printf("Failed: FREE\n");
         return -1;
     }
 
-    printf("Passed: TEST2\n");
+    printf("Passed: BTEST1\n");
     close(devfd);
     return 0;
 }

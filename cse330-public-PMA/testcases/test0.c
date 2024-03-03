@@ -23,7 +23,7 @@ bool test_allocate_ioctl(void){
     allocCall->vaddr                = vaddr;
     allocCall->num_pages            = num_pages;
     allocCall->write                = true;
-    if (!ioctl(devfd, ALLOCATE, allocCall) < 0) {
+    if (ioctl(devfd, ALLOCATE, allocCall) < 0) {
         return false;
     }
     return true;

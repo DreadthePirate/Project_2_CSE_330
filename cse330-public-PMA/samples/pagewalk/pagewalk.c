@@ -107,7 +107,7 @@ static int __init sample_init(void) {
     }
 
     // Get the physical address of the page
-    paddr = __pa(virt_addr);
+    unsigned long paddr = __pa(virt_addr);
 
 out:
     return 0;
